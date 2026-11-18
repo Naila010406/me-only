@@ -21,7 +21,13 @@ import java.time.LocalDate
  */
 object DummyDataSource {
 
-    const val CURRENT_USER_ID = 1
+    const val CURRENT_USER_ID =
+        "00000000-0000-4000-8000-000000000001"
+
+    private fun dummyUserId(id: Int): String {
+        return "00000000-0000-4000-8000-" +
+                id.toString().padStart(12, '0')
+    }
     private val today: LocalDate = LocalDate.now()
 
     var isLoggedIn: Boolean = false
@@ -140,21 +146,21 @@ object DummyDataSource {
     )
 
     val listings = mutableListOf(
-        TicketListing(1, 1, 20, "CAT 1", "Row 1.12", 1_200_000, 1_350_000, 9),
-        TicketListing(2, 1, 21, "CAT 2", "Row 4.03", 950_000, 1_400_000, 7),
-        TicketListing(3, 2, 22, "CAT 3", "Row 5", 2_000_000, 2_500_000, 1),
-        TicketListing(4, 3, 20, "CAT 2", "Row 8", 1_100_000, 1_300_000, 10),
-        TicketListing(5, 4, 23, "Festival", "Free standing", 650_000, 800_000, 3),
-        TicketListing(6, 5, 21, "Regular", "Free standing", 350_000, 450_000, 5),
-        TicketListing(7, 6, 22, "Balcony", "Row C", 250_000, 300_000, 1),
-        TicketListing(8, 7, 23, "5K", "-", 175_000, 190_000, 4),
+        TicketListing(1, 1, dummyUserId(20), "CAT 1", "Row 1.12", 1_200_000, 1_350_000, 9),
+        TicketListing(2, 1, dummyUserId(21), "CAT 2", "Row 4.03", 950_000, 1_400_000, 7),
+        TicketListing(3, 2, dummyUserId(22), "CAT 3", "Row 5", 2_000_000, 2_500_000, 1),
+        TicketListing(4, 3, dummyUserId(20), "CAT 2", "Row 8", 1_100_000, 1_300_000, 10),
+        TicketListing(5, 4, dummyUserId(23), "Festival", "Free standing", 650_000, 800_000, 3),
+        TicketListing(6, 5, dummyUserId(21), "Regular", "Free standing", 350_000, 450_000, 5),
+        TicketListing(7, 6, dummyUserId(22), "Balcony", "Row C", 250_000, 300_000, 1),
+        TicketListing(8, 7, dummyUserId(23), "5K", "-", 175_000, 190_000, 4),
         TicketListing(9, 8, CURRENT_USER_ID, "Day Pass", "-", 45_000, 50_000, 35, views = 37, saves = 4, offers = 1),
-        TicketListing(10, 9, 20, "Regular", "Row F", 180_000, 200_000, 26),
-        TicketListing(11, 10, 21, "Silver", "Row J", 240_000, 270_000, 3),
-        TicketListing(12, 11, 22, "Presale 2", "Free standing", 100_000, 125_000, 2),
-        TicketListing(13, 12, 23, "Regular", "Free standing", 75_000, 88_000, 4),
-        TicketListing(14, 13, 20, "Regular", "Row B", 30_000, 35_000, 1),
-        TicketListing(15, 14, 21, "Regular", "Free standing", 100_000, 120_000, 5)
+        TicketListing(10, 9, dummyUserId(20), "Regular", "Row F", 180_000, 200_000, 26),
+        TicketListing(11, 10, dummyUserId(21), "Silver", "Row J", 240_000, 270_000, 3),
+        TicketListing(12, 11, dummyUserId(22), "Presale 2", "Free standing", 100_000, 125_000, 2),
+        TicketListing(13, 12, dummyUserId(23), "Regular", "Free standing", 75_000, 88_000, 4),
+        TicketListing(14, 13, dummyUserId(20), "Regular", "Row B", 30_000, 35_000, 1),
+        TicketListing(15, 14, dummyUserId(21), "Regular", "Free standing", 100_000, 120_000, 5)
     )
 
     // Histori harga tiket yang pernah terjual, per event (bahan Fungsi 1).
@@ -167,20 +173,36 @@ object DummyDataSource {
     val orders = mutableListOf(
         // Pesanan milik user (tab Order Saya)
         Order(
-            1, 4, 5, CURRENT_USER_ID, 23, "Kayla Safania", 1, "Festival, Free standing",
-            800_000, 40_000, 840_000, "QRIS", "000109102026", "09-10-2026 19.20",
+            1, 4, 5,
+            CURRENT_USER_ID,
+            dummyUserId(23),
+            "Kayla Safania", 1, "Festival, Free standing",
+            800_000, 40_000, 840_000,
+            "QRIS", "000109102026", "09-10-2026 19.20",
             OrderStatus.DITERIMA
         ),
+
         // Pesanan masuk ke toko user (tab Order Toko)
         Order(
-            2, 8, 9, 30, CURRENT_USER_ID, "Dimas Prasetyo", 2, "Day Pass",
-            100_000, 5_000, 105_000, "Transfer Virtual Account", "000212102026", "12-10-2026 10.05",
+            2, 8, 9,
+            dummyUserId(30),
+            CURRENT_USER_ID,
+            "Dimas Prasetyo", 2, "Day Pass",
+            100_000, 5_000, 105_000,
+            "Transfer Virtual Account",
+            "000212102026", "12-10-2026 10.05",
             OrderStatus.DIPROSES
         ),
+
         Order(
-            3, 8, 9, 31, CURRENT_USER_ID, "Sinta Maharani", 1, "Day Pass",
-            50_000, 2_500, 52_500, "QRIS", "000314102026", "14-10-2026 08.41",
-            OrderStatus.SELESAI, rating = 5
+            3, 8, 9,
+            dummyUserId(31),
+            CURRENT_USER_ID,
+            "Sinta Maharani", 1, "Day Pass",
+            50_000, 2_500, 52_500,
+            "QRIS", "000314102026", "14-10-2026 08.41",
+            OrderStatus.SELESAI,
+            rating = 5
         )
     )
 

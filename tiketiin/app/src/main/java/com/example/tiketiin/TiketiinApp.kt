@@ -65,6 +65,9 @@ import com.example.tiketiin.ui.seller.SalesReportScreen
 import com.example.tiketiin.ui.seller.SalesViewModel
 import com.example.tiketiin.ui.simpleFactory
 import kotlinx.coroutines.launch
+import androidx.compose.ui.platform.LocalContext
+import com.example.tiketiin.data.repository.RepositoryProvider
+import android.widget.Toast
 
 /**
  * Akar aplikasi: NavHost + bottom navigation (perannya sama seperti NavigationLabApp
@@ -77,6 +80,12 @@ fun TiketiinApp() {
 
     // Sumber data sementara masih dummy. Nanti cukup ganti di baris ini.
     val repository = remember { DefaultTiketiinRepository(DummyDataSource) }
+
+    val context = LocalContext.current.applicationContext
+
+    val eventRepository = remember(context) {
+        RepositoryProvider.getEventRepository(context)
+    }
 
     // ViewModel yang dipakai lintas layar dibuat di sini agar datanya bertahan
     // selama berpindah langkah (checkout, alur jual, dan tab pesanan).
@@ -184,17 +193,47 @@ fun TiketiinApp() {
 
             // ------------------------- TAB: BERANDA -------------------------
             composable(Routes.HOME) {
+
                 val viewModel: HomeViewModel = viewModel(
-                    factory = simpleFactory { HomeViewModel(repository) }
+                    factory = simpleFactory {
+                        HomeViewModel(eventRepository)
+                    }
                 )
-                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                LaunchedEffect(Unit) { viewModel.load() }
+
+                val uiState by
+                viewModel.uiState.collectAsStateWithLifecycle()
+
+                LaunchedEffect(Unit) {
+                    viewModel.load()
+                }
 
                 HomeScreen(
                     uiState = uiState,
-                    onSearch = { category -> navController.navigate(Routes.search(category)) },
-                    onOpenSaved = { navController.navigate(Routes.SAVED) },
-                    onOpenEvent = { openEvent(it) },
+
+                    onSearch = {
+                        Toast.makeText(
+                            context,
+                            "Integrasi pencarian belum selesai",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+
+                    onOpenSaved = {
+                        Toast.makeText(
+                            context,
+                            "Integrasi wishlist belum selesai",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+
+                    onOpenEvent = {
+                        Toast.makeText(
+                            context,
+                            "Integrasi detail event belum selesai",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    },
+
                     onSelectCategory = viewModel::selectCategory,
                     onRetry = viewModel::load
                 )

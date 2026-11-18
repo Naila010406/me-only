@@ -36,7 +36,7 @@ data class Event(
     val viewCount: Int = 0,
     val viewsLast7Days: Int = 0,
     // Id user yang membuat event (untuk Kelola Event). 0 = bawaan sistem.
-    val createdBy: Int = 0
+    val createdBy: String? = null
 )
 
 enum class ListingStatus(val label: String) {
@@ -48,7 +48,7 @@ enum class ListingStatus(val label: String) {
 data class TicketListing(
     val id: Int,
     val eventId: Int,
-    val sellerId: Int,
+    val sellerId: String,
     val seatCategory: String,
     val row: String,
     val faceValue: Long,
@@ -71,8 +71,8 @@ data class Order(
     val id: Int,
     val eventId: Int,
     val listingId: Int,
-    val buyerId: Int,
-    val sellerId: Int,
+    val buyerId: String,
+    val sellerId: String,
     val buyerName: String,
     val quantity: Int,
     val seatLabel: String,
@@ -100,7 +100,7 @@ data class Hotel(
 )
 
 data class User(
-    val id: Int,
+    val id: String,
     val name: String,
     val email: String,
     val phone: String,

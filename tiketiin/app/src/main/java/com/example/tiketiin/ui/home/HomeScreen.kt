@@ -163,6 +163,44 @@ fun HomeScreen(
                 }
             }
 
+            if (uiState.isShowingCache) {
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFFFFF4D6))
+                        .padding(12.dp),
+
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+
+                    Text(
+                        text = if (uiState.isRefreshing) {
+                            "Memperbarui data event..."
+                        } else {
+                            "Menampilkan data terakhir. Harga dan stok mungkin berubah."
+                        },
+                        fontSize = 11.sp,
+                        color = Color(0xFF856404),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    if (!uiState.isRefreshing) {
+                        Text(
+                            text = "Refresh",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = BluePrimary,
+                            modifier = Modifier.clickable {
+                                onRetry()
+                            }
+                        )
+                    }
+                }
+            }
+
             val error = uiState.errorMessage
             if (uiState.isLoading) {
                 LoadingBox()
