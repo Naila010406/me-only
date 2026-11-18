@@ -156,7 +156,7 @@ class SellViewModel(
             val listing = TicketListing(
                 id = 0,
                 eventId = event.id,
-                sellerId = 0,
+                sellerId = "",
                 seatCategory = state.seatCategory,
                 row = state.row.ifBlank { "-" },
                 faceValue = result.faceValue,

@@ -5,6 +5,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 import com.example.tiketiin.data.remote.api.SupabaseApiService
+import com.example.tiketiin.data.remote.api.AuthApiService
 
 object RetrofitClient {
 
@@ -28,11 +29,18 @@ object RetrofitClient {
                         SupabaseConfig.PUBLISHABLE_KEY
                     )
 
-                accessToken?.let { token ->
-                    request.header(
-                        "Authorization",
-                        "Bearer $token"
-                    )
+                val isTokenEndpoint =
+                    chain.request().url.encodedPath == "/auth/v1/token"
+
+                if (!isTokenEndpoint) {
+
+                    accessToken?.let { token ->
+
+                        request.header(
+                            "Authorization",
+                            "Bearer $token"
+                        )
+                    }
                 }
 
                 chain.proceed(request.build())
@@ -57,5 +65,9 @@ object RetrofitClient {
 
     val api: SupabaseApiService by lazy {
         retrofit.create(SupabaseApiService::class.java)
+    }
+
+    val authApi: AuthApiService by lazy {
+        retrofit.create(AuthApiService::class.java)
     }
 }

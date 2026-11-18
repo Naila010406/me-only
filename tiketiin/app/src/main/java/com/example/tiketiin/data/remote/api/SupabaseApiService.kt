@@ -4,6 +4,7 @@ import com.example.tiketiin.data.remote.dto.EventDto
 import com.example.tiketiin.data.remote.dto.VenueDto
 import retrofit2.http.GET
 import retrofit2.http.Query
+import com.example.tiketiin.data.remote.dto.ProfileDto
 
 interface SupabaseApiService {
 
@@ -72,4 +73,25 @@ interface SupabaseApiService {
         quantity: String = "gt.0"
     ): List<EventDto>
 
+    // Mengambil profil berdasarkan UUID
+    @GET("rest/v1/profiles")
+    suspend fun getProfile(
+
+        @Query("id")
+        id: String,
+
+        @Query("select")
+        select: String = "*"
+
+    ): List<ProfileDto>
+
+
+    // Menguji akses profil berdasarkan RLS
+    @GET("rest/v1/profiles")
+    suspend fun getAccessibleProfiles(
+
+        @Query("select")
+        select: String = "*"
+
+    ): List<ProfileDto>
 }
