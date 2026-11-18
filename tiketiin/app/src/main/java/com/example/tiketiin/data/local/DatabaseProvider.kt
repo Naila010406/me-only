@@ -17,6 +17,10 @@ object DatabaseProvider {
                 TiketiinDatabase::class.java,
                 "tiketiin_database"
             )
+                .addMigrations(
+                    DatabaseMigrations.MIGRATION_1_2,
+                    DatabaseMigrations.MIGRATION_2_3
+                )
                 .build()
                 .also { INSTANCE = it }
 

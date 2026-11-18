@@ -14,6 +14,8 @@ data class CachedEventEntity(
     val venueId: Int,
     val venueName: String?,
     val city: String?,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val date: String,
     val time: String,
     val description: String,
@@ -25,6 +27,9 @@ data class CachedEventEntity(
     val baseWishlist: Int,
     val viewCount: Int,
     val viewsLast7Days: Int,
+
+    val lowestPrice: Long? = null,
+    val ticketCount: Int? = null,
 
     val cachedAt: Long = System.currentTimeMillis()
 

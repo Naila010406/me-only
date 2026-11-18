@@ -16,7 +16,12 @@ object RoomConnectionTest {
             context.applicationContext,
             TiketiinDatabase::class.java,
             "tiketiin_test_database"
-        ).build()
+        )
+            .addMigrations(
+                DatabaseMigrations.MIGRATION_1_2,
+                DatabaseMigrations.MIGRATION_2_3
+            )
+            .build()
 
         try {
 

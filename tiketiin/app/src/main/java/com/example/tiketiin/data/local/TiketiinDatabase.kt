@@ -9,7 +9,7 @@ import com.example.tiketiin.data.local.entity.CachedEventEntity
     entities = [
         CachedEventEntity::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = true
 )
 abstract class TiketiinDatabase : RoomDatabase() {

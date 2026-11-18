@@ -43,6 +43,9 @@ data class EventDto(
     @SerializedName("views_last_7_days")
     val viewsLast7Days: Int,
 
-    val venue: VenueDto?
+    val venue: VenueDto?,
+
+    @SerializedName("ticket_listings")
+    val ticketListings: List<ListingSummaryDto>? = null
 
 )

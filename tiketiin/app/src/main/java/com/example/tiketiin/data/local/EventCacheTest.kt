@@ -3,7 +3,7 @@ package com.example.tiketiin.data.local
 import android.content.Context
 import android.util.Log
 import com.example.tiketiin.data.mapper.toEntity
-import com.example.tiketiin.data.remote.RetrofitClient
+import com.example.tiketiin.data.remote.EventRemoteDataSource
 import kotlinx.coroutines.CancellationException
 
 object EventCacheTest {
@@ -21,11 +21,18 @@ object EventCacheTest {
             )
 
             // Mengambil data dari Supabase
-            val remoteEvents = RetrofitClient.api.getEvents()
+            val remoteDataSource = EventRemoteDataSource()
+
+            val remoteEvents =
+                remoteDataSource.getEventsWithListings()
 
             Log.d(TAG, "Remote events: ${remoteEvents.size}")
 
             check(remoteEvents.isNotEmpty())
+
+            check(remoteEvents.all { it.ticketListings != null }) {
+                "Data listing belum berhasil diambil"
+            }
 
             // Mengubah DTO menjadi Entity
             val entities = remoteEvents.map {
@@ -49,7 +56,8 @@ object EventCacheTest {
                     TAG,
                     "LOCAL | ID: ${event.id} | " +
                             "Event: ${event.name} | " +
-                            "Venue: ${event.venueName}"
+                            "Harga: Rp${event.lowestPrice} | " +
+                            "Stok: ${event.ticketCount}"
                 )
             }
 
@@ -89,7 +97,8 @@ object EventCacheTest {
                     TAG,
                     "OFFLINE | ID: ${event.id} | " +
                             "Event: ${event.name} | " +
-                            "Venue: ${event.venueName}"
+                            "Harga: Rp${event.lowestPrice} | " +
+                            "Stok: ${event.ticketCount}"
                 )
             }
 
