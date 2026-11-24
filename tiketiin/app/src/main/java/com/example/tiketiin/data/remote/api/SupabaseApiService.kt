@@ -5,6 +5,22 @@ import com.example.tiketiin.data.remote.dto.VenueDto
 import retrofit2.http.GET
 import retrofit2.http.Query
 import com.example.tiketiin.data.remote.dto.ProfileDto
+import com.example.tiketiin.data.remote.dto.CreateEventDto
+import retrofit2.http.Body
+import retrofit2.http.POST
+import com.example.tiketiin.data.remote.dto.UpdateEventDto
+import retrofit2.http.Headers
+import retrofit2.http.PATCH
+import retrofit2.http.DELETE
+import com.example.tiketiin.data.remote.dto.CreateVenueDto
+import com.example.tiketiin.data.remote.dto.ActiveListingDto
+import com.example.tiketiin.data.remote.dto.EventViewDto
+import com.example.tiketiin.data.remote.dto.EventDemandStatsDto
+import com.example.tiketiin.data.remote.dto.SellerSalesOrderDto
+import com.example.tiketiin.data.remote.dto.CreateWishlistRequest
+import com.example.tiketiin.data.remote.dto.WishlistDto
+import retrofit2.Response
+
 
 interface SupabaseApiService {
 
@@ -18,6 +34,12 @@ interface SupabaseApiService {
         order: String = "date.asc"
     ): List<EventDto>
 
+    @GET("rest/v1/events")
+    suspend fun getEventsByOwner(
+        @Query("created_by") ownerFilter: String,
+        @Query("select") select: String = "*,venue:venues(*)",
+        @Query("order") order: String = "date.asc"
+    ): List<EventDto>
 
     // Mengambil detail event
     @GET("rest/v1/events")
@@ -94,4 +116,75 @@ interface SupabaseApiService {
         select: String = "*"
 
     ): List<ProfileDto>
+
+    @POST("rest/v1/events")
+    suspend fun createEvent(@Body event: CreateEventDto)
+
+    @Headers("Prefer: return=representation")
+    @PATCH("rest/v1/events")
+    suspend fun updateEvent(
+        @Query("id") idFilter: String,
+        @Body event: UpdateEventDto
+    ): List<EventDto>
+
+    @Headers("Prefer: return=representation")
+    @DELETE("rest/v1/events")
+    suspend fun deleteEvent(@Query("id") idFilter: String): List<EventDto>
+
+    @Headers("Prefer: return=representation")
+    @POST("rest/v1/venues")
+    suspend fun createVenue(@Body venue: CreateVenueDto): List<VenueDto>
+
+    @GET("rest/v1/ticket_listings")
+    suspend fun getCheapestActiveListing(
+        @Query("event_id") eventFilter: String,
+        @Query("status") status: String = "eq.AKTIF",
+        @Query("quantity") quantity: String = "gt.0",
+        @Query("order") order: String = "price.asc,id.asc",
+        @Query("limit") limit: Int = 1
+    ): List<ActiveListingDto>
+
+    @Headers("Prefer: resolution=ignore-duplicates,return=minimal")
+    @POST("rest/v1/event_views")
+    suspend fun recordEventView(
+        @Body view: EventViewDto,
+        @Query("on_conflict") conflictColumns: String = "user_id,event_id,viewed_on"
+    )
+
+    @GET("rest/v1/rpc/get_event_demand_stats")
+    suspend fun getEventDemandStats(): List<EventDemandStatsDto>
+
+    @GET("rest/v1/orders")
+    suspend fun getPaidSellerOrders(
+        @Query("seller_id") sellerFilter: String,
+        @Query("status") orderStatus: String = "in.(PAID,COMPLETED)",
+        @Query("payments.status") paymentStatus: String = "eq.SUCCESS",
+        @Query("select") select: String =
+            "event_id,unit_price,quantity,event:events(name),payments!inner(status)",
+        @Query("order") order: String = "id.asc",
+        @Query("limit") limit: Int = 100,
+        @Query("offset") offset: Int = 0
+    ): List<SellerSalesOrderDto>
+
+    @retrofit2.http.POST("storage/v1/object/event-posters/{path}")
+    suspend fun uploadEventPoster(
+        @retrofit2.http.Path("path", encoded = true) path: String,
+        @retrofit2.http.Body image: okhttp3.RequestBody
+    ): Unit
+
+    @GET("rest/v1/wishlists")
+    suspend fun getWishlists(
+        @Query("user_id") userId: String,
+        @Query("select") select: String = "id,user_id,event_id"
+    ): List<WishlistDto>
+
+    @POST("rest/v1/wishlists")
+    @Headers("Prefer: return=minimal")
+    suspend fun addWishlist(@Body request: CreateWishlistRequest): Response<Unit>
+
+    @DELETE("rest/v1/wishlists")
+    suspend fun deleteWishlist(
+        @Query("user_id") userId: String,
+        @Query("event_id") eventId: String
+    ): Response<Unit>
 }

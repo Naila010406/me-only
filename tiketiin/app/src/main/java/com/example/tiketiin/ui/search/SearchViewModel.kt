@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import kotlin.coroutines.cancellation.CancellationException
+import com.example.tiketiin.data.repository.EventCatalogRepository
 
 data class SearchUiState(
     val query: String = "",
@@ -26,7 +27,9 @@ data class SearchUiState(
 
 class SearchViewModel(
     private val repository: TiketiinRepository,
-    initialCategory: EventCategory?
+    initialCategory: EventCategory?,
+    private val catalog: EventCatalogRepository,
+    private val flashOnly: Boolean = false
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SearchUiState(category = initialCategory))
@@ -72,8 +75,28 @@ class SearchViewModel(
                 val state = _uiState.value
                 val today = LocalDate.now()
                 // Event yang sudah lewat atau tiketnya habis tidak ditampilkan.
-                val found = repository.searchEvents(state.query, state.category)
-                    .filter { !it.event.date.isBefore(today) && it.ticketCount > 0 }
+                val cached = catalog.getCachedEvents()
+                val events = if (cached.isEmpty()) {
+                    catalog.refreshEvents()
+                    catalog.getCachedEvents()
+                } else {
+                    cached
+                }
+
+                val query = state.query.trim()
+                val found = events.filter { item ->
+                    val event = item.event
+                    val matchesQuery = query.isBlank() ||
+                            event.name.contains(query, ignoreCase = true) ||
+                            event.venue.contains(query, ignoreCase = true) ||
+                            event.city.contains(query, ignoreCase = true)
+
+                    matchesQuery &&
+                            (state.category == null || event.category == state.category) &&
+                            !event.date.isBefore(today) &&
+                            item.ticketCount > 0 &&
+                            (!flashOnly || (event.flashEndsInHours ?: 0) > 0)
+                }
                 val sorted = if (state.sortByCheapest) {
                     found.sortedBy { it.lowestPrice }
                 } else {

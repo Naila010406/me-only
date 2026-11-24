@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
 
 data class DetailUiState(
     val isLoading: Boolean = true,
@@ -23,7 +24,8 @@ data class DetailUiState(
 }
 
 class DetailViewModel(
-    private val repository: TiketiinRepository
+    private val repository: TiketiinRepository,
+    private val remote: Boolean = false
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DetailUiState())
@@ -33,25 +35,68 @@ class DetailViewModel(
 
     fun load(eventId: Int) {
         viewModelScope.launch {
-            // Catat satu kali "dilihat" (bahan skor demand Hot Opportunity).
-            if (!viewRecorded) {
-                repository.recordView(eventId)
-                viewRecorded = true
-            }
-            val summary = repository.getEventSummary(eventId)
-            if (summary == null) {
-                _uiState.update { it.copy(isLoading = false, errorMessage = "Event tidak ditemukan") }
-                return@launch
-            }
-            val listing = repository.getCheapestListing(eventId)
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    errorMessage = null,
-                    summary = summary,
-                    listing = listing,
-                    quantity = it.quantity.coerceIn(1, (listing?.quantity ?: 1).coerceAtLeast(1))
-                )
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+            try {
+                val summary = if (remote) {
+                    repository.getRemoteEventSummary(eventId)
+                } else {
+                    repository.getEventSummary(eventId)
+                }
+
+                if (summary == null) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            summary = null,
+                            listing = null,
+                            errorMessage = "Event tidak ditemukan."
+                        )
+                    }
+                    return@launch
+                }
+
+                val listing = if (remote) {
+                    repository.getRemoteCheapestListing(eventId)
+                } else {
+                    repository.getCheapestListing(eventId)
+                }
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        summary = summary,
+                        listing = listing,
+                        quantity = it.quantity.coerceIn(
+                            1,
+                            (listing?.quantity ?: 1).coerceAtLeast(1)
+                        )
+                    )
+                }
+                if (!viewRecorded) {
+                    try {
+                        if (remote) {
+                            repository.recordRemoteView(eventId)
+                        } else {
+                            repository.recordView(eventId)
+                        }
+                        viewRecorded = true
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (e: Exception) {
+                        android.util.Log.w("DetailViewModel", "Gagal mencatat view event", e)
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        summary = null,
+                        listing = null,
+                        errorMessage = "Detail event gagal dimuat. Coba buka kembali."
+                    )
+                }
             }
         }
     }

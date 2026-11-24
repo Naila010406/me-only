@@ -68,6 +68,9 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalContext
 import com.example.tiketiin.data.repository.RepositoryProvider
 import android.widget.Toast
+import com.example.tiketiin.ui.home.FlashTicketsScreen
+import com.example.tiketiin.data.repository.SavedEventsRepository
+import com.example.tiketiin.data.repository.WishlistRepository
 
 /**
  * Akar aplikasi: NavHost + bottom navigation (perannya sama seperti NavigationLabApp
@@ -82,7 +85,7 @@ fun TiketiinApp() {
     val repository = remember { DefaultTiketiinRepository(DummyDataSource) }
 
     val context = LocalContext.current.applicationContext
-
+    val wishlistRepository = remember { WishlistRepository() }
     val eventRepository = remember(context) {
         RepositoryProvider.getEventRepository(context)
     }
@@ -124,8 +127,8 @@ fun TiketiinApp() {
         }
     }
 
-    fun openEvent(eventId: Int) {
-        navController.navigate(Routes.detail(eventId))
+    fun openEvent(eventId: Int, remote: Boolean = false) {
+        navController.navigate(Routes.detail(eventId, remote))
     }
 
     // Mulai checkout (dari Detail Event atau Event Tersimpan).
@@ -196,7 +199,7 @@ fun TiketiinApp() {
 
                 val viewModel: HomeViewModel = viewModel(
                     factory = simpleFactory {
-                        HomeViewModel(eventRepository)
+                        HomeViewModel(eventRepository, wishlistRepository)
                     }
                 )
 
@@ -205,33 +208,21 @@ fun TiketiinApp() {
 
                 LaunchedEffect(Unit) {
                     viewModel.load()
+                    viewModel.loadWishlist()
                 }
 
                 HomeScreen(
                     uiState = uiState,
 
-                    onSearch = {
-                        Toast.makeText(
-                            context,
-                            "Integrasi pencarian belum selesai",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    },
-
-                    onOpenSaved = {
-                        Toast.makeText(
-                            context,
-                            "Integrasi wishlist belum selesai",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    },
+                    onSearch = { category -> navController.navigate(Routes.search(category)) },
+                    onOpenFlashTickets = {
+                        navController.navigate(Routes.FLASH_TICKETS) },
+                    onOpenSaved = { navController.navigate(Routes.SAVED) },
+                    onToggleSaved = viewModel::toggleSaved,
+                    onRetryWishlist = viewModel::loadWishlist,
 
                     onOpenEvent = {
-                        Toast.makeText(
-                            context,
-                            "Integrasi detail event belum selesai",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        openEvent(it, remote = true)
                     },
 
                     onSelectCategory = viewModel::selectCategory,
@@ -258,6 +249,25 @@ fun TiketiinApp() {
                 )
             }
 
+            // ------------------------- FLASS TIKET -------------------------
+
+            composable(Routes.FLASH_TICKETS) {
+                val viewModel: HomeViewModel = viewModel(
+                    factory = simpleFactory { HomeViewModel(eventRepository, wishlistRepository) }
+                )
+                val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+                LaunchedEffect(Unit) {
+                    viewModel.load()
+                }
+
+                FlashTicketsScreen(
+                    uiState = uiState,
+                    onBack = { navController.popBackStack() },
+                    onOpenEvent = { openEvent(it, remote = true) },
+                    onRetry = viewModel::load
+                )
+            }
             // ------------------------- TAB: JUAL TIKET (Fungsi 2) -------------------------
             composable(Routes.SELL) {
                 val viewModel: HotOpportunityViewModel = viewModel(
@@ -353,7 +363,12 @@ fun TiketiinApp() {
                 val categoryName = entry.arguments?.getString("category") ?: "all"
                 val initialCategory = EventCategory.entries.find { it.name == categoryName }
                 val viewModel: SearchViewModel = viewModel(
-                    factory = simpleFactory { SearchViewModel(repository, initialCategory) }
+                    factory = simpleFactory {SearchViewModel(
+                        repository,
+                        initialCategory,
+                        eventRepository,
+                        flashOnly = categoryName == "flash"
+                    )}
                 )
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -364,14 +379,14 @@ fun TiketiinApp() {
                     onSelectCategory = viewModel::selectCategory,
                     onToggleSort = viewModel::toggleSort,
                     onToggleSaved = viewModel::toggleSaved,
-                    onOpenEvent = { openEvent(it) },
+                    onOpenEvent = { openEvent(it, remote = true) },
                     onRetry = viewModel::refresh
                 )
             }
 
             composable(Routes.SAVED) {
                 val viewModel: SavedViewModel = viewModel(
-                    factory = simpleFactory { SavedViewModel(repository) }
+                    factory = simpleFactory { SavedViewModel(SavedEventsRepository(wishlistRepository, eventRepository)) }
                 )
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 LaunchedEffect(Unit) { viewModel.load() }
@@ -382,19 +397,26 @@ fun TiketiinApp() {
                     onSelectCategory = viewModel::selectCategory,
                     onToggleSelected = viewModel::toggleSelected,
                     onRemove = viewModel::remove,
-                    onOpenEvent = { openEvent(it) },
-                    onCheckout = { eventId -> startCheckout(eventId, 1) }
+                    onOpenEvent = { openEvent(it, remote = true) },
+                    onCheckout = { eventId -> startCheckout(eventId, 1) },
+                    onRetry = viewModel::load
                 )
             }
 
             // ------------------------- DETAIL EVENT & CHECKOUT -------------------------
             composable(
                 route = Routes.DETAIL,
-                arguments = listOf(navArgument("eventId") { type = NavType.IntType })
-            ) { entry ->
+                arguments = listOf(
+                    navArgument("eventId") { type = NavType.IntType },
+                    navArgument("remote") {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    }
+                )            ) { entry ->
                 val eventId = entry.arguments?.getInt("eventId") ?: -1
+                val remote = entry.arguments?.getBoolean("remote") ?: false
                 val viewModel: DetailViewModel = viewModel(
-                    factory = simpleFactory { DetailViewModel(repository) }
+                    factory = simpleFactory { DetailViewModel(repository, remote) }
                 )
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 LaunchedEffect(eventId) { viewModel.load(eventId) }
@@ -405,7 +427,11 @@ fun TiketiinApp() {
                     onSelectTab = viewModel::selectTab,
                     onChangeQuantity = viewModel::changeQuantity,
                     onToggleSaved = viewModel::toggleSaved,
-                    onBuy = { id, quantity -> startCheckout(id, quantity) }
+                    onBuy = { id, quantity ->
+                        if (!remote) {
+                            startCheckout(id, quantity)
+                        }
+                    }
                 )
             }
 
